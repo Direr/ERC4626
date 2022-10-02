@@ -29,19 +29,28 @@ contract ERC4626 is ERC20, IERC4626 {
     using Math for uint256;
 
     IERC20 private immutable _asset;                // base token
-    // mapping(address => uint256) shareHoldings;
+    address private immutable _rebalancerAddress;
 
     /**
-     * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC20 or ERC777).
+     * @dev Sets the underlying asset contract. This must be an ERC20-compatible contract (ERC20 or ERC777).
      */
 
     constructor(
-        IERC20 asset_,             // base token
-        string memory name_,       // share token name
-        string memory symbol_      // share token symbol
+        string memory name_,        // share token name
+        string memory symbol_,      // share token symbol
+        IERC20 asset_,              // base token
+        address rebalancerAddress_         // Rebalancer address
     ) 
-        ERC20(name_, symbol_, 0){
+        ERC20(name_, symbol_, 0)    // sets ERC20 metadata of ERC4626
+    {   
         _asset = asset_;
+        _rebalancerAddress = rebalancerAddress_;
+    }
+
+    // Modifier to check that the contract which calls reabalance() is Rebalancer
+    modifier onlyRebalancer() {
+        require(msg.sender == _rebalancerAddress, "Not rebalancer");
+        _;
     }
 
     /** @dev See {IERC4626-asset}. */
@@ -255,4 +264,26 @@ contract ERC4626 is ERC20, IERC4626 {
     function _isVaultCollateralized() private view returns (bool) {
         return totalAssets() > 0 || totalSupply() == 0;
     }
+
+    /*
+     ********** Rebalancing logic **************
+     */
+
+    function transferAsset(address oppositePool, uint256 amount) public onlyRebalancer {
+      require(oppositePool != address(0), "cannot be 0 address");
+      require(amount <= totalAssets(), "cannot transfer more than total asset");
+      _asset.transfer(oppositePool, amount);
+      // emit setOppositePoolAddress(oldOppositePoolAddress, _oppositePoolAddress);
+  }
+
+
+//    * @notice Sets or resets the address of the opposite pool
+//    * @dev Only callable by the contract owner (onlyOwner to be implemented)
+//    * @dev emits xxx when the addressses are successfuly changed (tbi)
+//    */
+//   function setOppositePoolAddress(address oppositePoolAddress_) public {
+//       require(_oppositePoolAddress != address(0), "oppositePoolAddress cannot be 0 address");
+//       _oppositePoolAddress = oppositePoolAddress_;
+//       // emit setOppositePoolAddress(oldOppositePoolAddress, _oppositePoolAddress);
+//   }
 }

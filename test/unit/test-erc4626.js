@@ -1,5 +1,5 @@
 const { deployments, ethers } = require("hardhat")
-const { assert, expect } = require("chai")
+const { assert } = require("chai")
 const assetDeposit = 10
 const allowedValue = 50
 const transferValue = 20
